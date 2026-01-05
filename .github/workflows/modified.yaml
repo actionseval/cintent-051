@@ -1,0 +1,69 @@
+name: Examples
+
+# CINTENT >> MANUAL TRIGGER
+# on:
+#   pull_request:
+#   workflow_dispatch:
+on: [repository_dispatch, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.operating-system }}
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        python-version: ["3.12"]
+        operating-system: [ubuntu-latest]
+        # Next line should be [1, 2, ..., max-parallel)
+
+        # CINTENT >> REMOVE_MATRIX
+        # test_group: [1, 2, 3, 4, 5]
+        test_group: [5]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # CINTENT >> INSERT_CINTENT
+      - uses: JavidDitty/setup-cintent@a606c80c34ec190c6a20dea33d6d58ddb6c4e0cc
+
+      - name: Set up uv
+        id: setup-uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+          cache-dependency-glob: "**/pyproject.toml"
+          cache-suffix: "uv-${{ matrix.python-version }}-${{ matrix.operating-system }}"
+
+      - name: Install PoreSpy
+        run: |
+          uv sync --extra test --extra extras --extra build
+          uv build
+
+      - name: Setup FFmpeg
+        uses: AnimMouse/setup-ffmpeg@v1
+
+      - name: Run examples
+        # Make sure to pass max-parallel to --splits
+        run: |
+          uv run pytest \
+            -p no:python \
+            --nbval-lax \
+            --splits ${{ strategy.max-parallel}} \
+            --group ${{ matrix.test_group }} \
+            --durations-path test/fixtures/.test_durations_examples \
+            --suppress-no-test-exit-code  # so if no tests collected, CI won't break
+
+      # CINTENT >> INSERT_CINTENT
+      - name: Upload CIntent Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ env.CINTENT_ARTIFACT_NAME }}
+          path: ${{ env.CINTENT_LOGS }}

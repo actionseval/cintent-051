@@ -1,0 +1,73 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import porespy as ps
+
+edt = ps.tools.get_edt()
+
+
+def test_inverse_Bo_study(plot=False):
+    np.random.seed(0)
+
+    # Generate image
+    vx = 0.0001
+    sigma = 0.072
+    theta = 180
+    g = 9.81
+     # To get the trends observed in the WRR paper the image must be way bigger
+    im = ps.generators.overlapping_spheres(shape=[600, 200], r=8, porosity=0.65)
+
+    inlets = np.zeros_like(im, dtype=bool)
+    inlets[0, ...] = True
+    outlets = np.zeros_like(im, dtype=bool)
+    outlets[-1, ...] = True
+    dt = np.sqrt(edt(im))
+    a = np.median(dt[dt > 0])*vx*2
+
+    sim1 = {}
+    inv_Bo = np.flip(np.logspace(np.log10(0.0001), np.log10(1000), 15))
+    for i, dr in enumerate(inv_Bo):
+        Bo = 1/inv_Bo[i]
+        delta_rho = Bo*sigma/(g*a**2)  # delta_rho is found given the Bo
+        pc = ps.filters.capillary_transform(
+            im=im,
+            dt=dt,
+            sigma=sigma,
+            theta=theta,
+            g=g,
+            rho_wp=0,
+            rho_nwp=delta_rho,
+            voxel_size=vx,
+        )
+        sim1[i] = ps.simulations.drainage(
+            im=im,
+            inlets=inlets,
+            pc=pc,
+            steps=25,
+        )
+
+    # %%  Process data to make 1/Bo vs H plot
+    data = []
+    smin, smax = 0.1, 0.90
+    for h in range(len(inv_Bo)):
+        for s in np.arange(0.2, 1.0, 0.1):
+            prof = ps.metrics.satn_profile(satn=sim1[h].im_snwp, s=s, span=1,
+                                           mode='slide')
+            if 0:
+                plt.plot(prof.position,
+                         prof.saturation)
+            H = ps.metrics.find_h(prof.saturation,
+                                  prof.position,
+                                  srange=[smin, smax])
+            data.append((inv_Bo[h], s, H.zmin, H.zmax, H.h))
+    df = pd.DataFrame(data, columns=['1/Bo', 's', 'zmin', 'zmax', 'h'])
+
+    if plot:
+        plt.loglog(df['1/Bo'], df['h'], 'bo')
+        plt.loglog((inv_Bo[0], inv_Bo[-1]), (a/vx, a/vx), 'k-')
+        plt.loglog((inv_Bo[0], inv_Bo[-1]), (im.shape[0], im.shape[0]), 'k-')
+        plt.ylim([1, 10000])
+
+if __name__ == "__main__":
+    test_inverse_Bo_study()
