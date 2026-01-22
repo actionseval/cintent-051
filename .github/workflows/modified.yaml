@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v5
 
       # CINTENT >> INSERT_CINTENT
-      - uses: JavidDitty/setup-cintent@a606c80c34ec190c6a20dea33d6d58ddb6c4e0cc
+      - uses: JavidDitty/setup-cintent@64faaac1333aabc2e0a00af6109b48ec4d8071bf
 
       - name: Set up uv
         id: setup-uv
