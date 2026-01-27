@@ -29,9 +29,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      # CINTENT >> INSERT_CINTENT
-      - uses: JavidDitty/setup-cintent@64faaac1333aabc2e0a00af6109b48ec4d8071bf
-
       - name: Set up uv
         id: setup-uv
         uses: astral-sh/setup-uv@v6
@@ -40,6 +37,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache-dependency-glob: "**/pyproject.toml"
           cache-suffix: "uv-${{ matrix.python-version }}-${{ matrix.operating-system }}"
+
+      # CINTENT >> INSERT_CINTENT
+      - uses: JavidDitty/setup-cintent@3e5b2faf83a2ad32c22a1cd0f86f5f20ea53a5ab
 
       - name: Install PoreSpy
         run: |
