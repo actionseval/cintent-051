@@ -37,9 +37,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache-dependency-glob: "**/pyproject.toml"
           cache-suffix: "uv-${{ matrix.python-version }}-${{ matrix.operating-system }}"
-
+      
       # CINTENT >> INSERT_CINTENT
-      - uses: JavidDitty/setup-cintent@e3d420b9a40765f278d3651507e812014bfc7407
+      - uses: JavidDitty/setup-cintent@3638849e94bdb037f0a405375686a8550e6df904
+        with:
+          nonblocking: true
 
       - name: Install PoreSpy
         run: |
